@@ -31,7 +31,7 @@ lean_exe «ep133_test» where
   srcDir := "src"
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4" @ "v4.20.0"
+  "https://github.com/leanprover-community/mathlib4" @ "v4.24.0"
 
 require LSpec from git
   "https://github.com/argumentcomputer/LSpec" @ "24cceb69c20fadca0fd3acabe39fa9270dfb47e6"
@@ -40,5 +40,5 @@ require Parser from git
   "https://github.com/fgdorais/lean4-parser" @ "26d5ce4d60195a869b1fdb100b442794ea63e1ad"
 
 require Cli from git
-  "https://github.com/mhuisi/lean4-cli" @ "v4.20.0"
+  "https://github.com/mhuisi/lean4-cli" @ "v4.24.0"
 
