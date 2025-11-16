@@ -13,6 +13,7 @@ inductive ParseResult (a : Type) where
 | parsed : a → ParseResult a
 | throw : String → ParseResult a
 deriving Repr, BEq
+open ParseResult (throw)
 
 instance : Monad ParseResult where
   pure := ParseResult.parsed
@@ -39,16 +40,14 @@ deriving Repr, BEq, Hashable
 
 namespace EffectLabel
 
-  open ParseResult
-
   def ofUInt8 : UInt8 → ParseResult EffectLabel
-  | 0 => parsed OFF
-  | 1 => parsed DLY
-  | 2 => parsed RVB
-  | 3 => parsed DST
-  | 4 => parsed CXO
-  | 5 => parsed FLT
-  | 6 => parsed CMP
+  | 0 => pure OFF
+  | 1 => pure DLY
+  | 2 => pure RVB
+  | 3 => pure DST
+  | 4 => pure CXO
+  | 5 => pure FLT
+  | 6 => pure CMP
   | i => throw $ "Effect " ++ toString i ++ " is not defined."
 
 end EffectLabel
@@ -108,6 +107,88 @@ instance : Inhabited Scene where
 structure Scenes where
   raw : ByteArray
   scenes : Array Scene
+deriving Repr, BEq
+
+
+inductive TimeStretch where
+| OFF
+| BPM
+| BARS
+deriving Repr, BEq
+
+namespace TimeStretch
+
+  def ofUInt8 : UInt8 → ParseResult TimeStretch
+  | 0 => pure OFF
+  | 1 => pure BPM
+  | 2 => pure BARS
+  | i => throw $ "Time stretch " ++ toString i ++ " is not defined."
+
+end TimeStretch
+
+
+inductive TimeStretchBars where
+| WHOLE
+| DOUBLE
+| QUADRUPLE
+| HALF
+| QUARTER
+deriving Repr, BEq
+
+namespace TimeStretchBars
+
+  def ofUInt8 : UInt8 → ParseResult TimeStretchBars
+  | 0 => pure WHOLE
+  | 1 => pure DOUBLE
+  | 2 => pure QUADRUPLE
+  | 255 => pure HALF
+  | 254 => pure QUARTER
+  | i => throw $ "Time stretch bars " ++ toString i ++ " is not defined."
+
+end TimeStretchBars
+
+
+inductive PlayMode where
+| ONE
+| KEY
+| LEG
+deriving Repr, BEq
+
+namespace PlayMode
+
+  def ofUInt8 : UInt8 → ParseResult PlayMode
+  | 0 => pure ONE
+  | 1 => pure KEY
+  | 2 => pure LEG
+  | i => throw $ "Play mode " ++ toString i ++ " is not defined."
+
+end PlayMode
+
+
+inductive ChokeGroup where
+| TRUE
+| FALSE
+deriving Repr, BEq
+
+namespace ChokeGroup
+
+  def ofUInt8 : UInt8 → ParseResult ChokeGroup
+  | 0 => pure TRUE
+  | 1 => pure FALSE
+  | i => throw $ "Choke group " ++ toString i ++ " is not defined."
+
+end ChokeGroup
+
+
+def Volume := Fin 201
+deriving Repr, BEq
+
+
+def Attack := UInt8
+deriving Repr, BEq
+
+
+def Release := UInt8
 deriving Repr, BEq
 
 

@@ -9,6 +9,8 @@ open Ep133.Util (getFloat32BE require)
 open ParseResult (throw)
 
 
+-- See <https://github.com/phones24/ep133-export-to-daw/blob/99454368f8da44b8b5bf495df0f89c72603b8dc4/docs/EP133_FORMATS.md> for reference.
+
 namespace Ep133.Parsing
 
 
