@@ -1,0 +1,28 @@
+name: Lean Action CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - lakefile.lean
+      - lake-manifest.json
+      - lean-toolchain
+      - "src/**"
+  pull_request:
+    paths:
+      - lakefile.lean
+      - lake-manifest.json
+      - lean-toolchain
+      - "src/**"
+  workflow_dispatch:
+
+jobs:
+
+  lean:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: .
