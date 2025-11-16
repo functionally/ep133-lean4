@@ -63,7 +63,8 @@ namespace Examples
 
 end Examples
 
-#guard (Effects.effect <$> Parsing.parseEffects Examples.rawEffect) == ParseResult.parsed Effect.OFF
+
+#guard (Effects.active <$> Parsing.parseEffects Examples.rawEffect) == ParseResult.parsed EffectLabel.OFF
 
 #guard ((Array.size ∘ Scenes.scenes) <$> Parsing.parseScenes Examples.rawScenes) == ParseResult.parsed 4
 

@@ -1,4 +1,7 @@
 
+import Std.Data.HashMap.Basic
+
+
 namespace Ep133.Types
 
 
@@ -24,7 +27,7 @@ instance : Alternative ParseResult where
   | ParseResult.throw _, f => f ()
 
 
-inductive Effect where
+inductive EffectLabel where
 | OFF
 | DLY
 | RVB
@@ -32,13 +35,13 @@ inductive Effect where
 | CXO
 | FLT
 | CMP
-deriving Repr, BEq
+deriving Repr, BEq, Hashable
 
-namespace Effect
+namespace EffectLabel
 
   open ParseResult
 
-  def ofUInt8 : UInt8 → ParseResult Effect
+  def ofUInt8 : UInt8 → ParseResult EffectLabel
   | 0 => parsed OFF
   | 1 => parsed DLY
   | 2 => parsed RVB
@@ -48,14 +51,19 @@ namespace Effect
   | 6 => parsed CMP
   | i => throw $ "Effect " ++ toString i ++ " is not defined."
 
-end Effect
+end EffectLabel
+
+
+structure EffectParams where
+  param1 : Float32
+  param2 : Float32
+deriving Repr, BEq
 
 
 structure Effects where
   raw : ByteArray
-  effect : Effect
-  param1 : Float32
-  param2 : Float32
+  active : EffectLabel
+  effects : Std.HashMap EffectLabel EffectParams
 deriving Repr
 
 

@@ -14,17 +14,24 @@ namespace Ep133.Parsing
 
 def parseEffects (raw : ByteArray) : ParseResult Effects :=
   do
-   require (raw.size = 144)
-      $ throw "Effects not 144 bytes."
+   require (raw.size >= 100)
+      $ throw ("Effects only contains " ++ toString raw.size ++ " bytes.")
     let effectType := raw[4]!
-    let offsetBase := (effectType.toNat - 1) * 4
-    let effect ← Effect.ofUInt8 effectType
+    let active ← EffectLabel.ofUInt8 effectType
+    let effects ←
+      (List.range 7).mapM
+        (fun i ↦
+          do
+            let label ← EffectLabel.ofUInt8 i.toUInt8
+            let param1 := getFloat32BE raw $ 8 + 4 * i
+            let param2 := getFloat32BE raw $ 72 + 4 * i
+            pure ⟨ label , {param1, param2} ⟩
+        )
     pure
       {
         raw
-      , effect
-      , param1 := getFloat32BE raw $ offsetBase + 12
-      , param2 := getFloat32BE raw $ offsetBase + 76
+      , active
+      , effects := Std.HashMap.ofList effects
       }
 
 
@@ -51,7 +58,7 @@ def parseScene (raw : ByteArray) (offset : Nat) : ParseResult Scene :=
 def parseScenes (raw : ByteArray) : ParseResult Scenes :=
   do
     require (raw.size >= 605)
-      $ ParseResult.throw "Scene does not contain at least 605 bytes."
+      $ throw ("Scenes only contains " ++ toString raw.size ++ " bytes.")
     let sceneCount := raw[604]! |> UInt8.toNat
     let scenes : List Scene ← (List.range sceneCount).mapM (fun n ↦ parseScene raw (1 + 6 * n))
     pure
