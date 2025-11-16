@@ -59,6 +59,50 @@ structure Effects where
 deriving Repr
 
 
+structure TimeSignature where
+  numerator : Nat
+  denominator : Nat
+deriving Repr, BEq
+
+
+structure PatternLabel where
+  letter : Fin 4
+  number : Fin 99
+deriving Repr, BEq
+
+instance : ToString PatternLabel where
+  toString
+  | ⟨ l , n ⟩ =>
+    let letter := l.toNat + 'A'.toNat |> Char.ofNat
+    let number := if n.toNat < 9 then "0" ++ toString (n.toNat + 1) else toString (n.toNat + 1)
+    letter.toString ++ number
+
+
+structure Scene where
+  patternA : PatternLabel
+  patternB : PatternLabel
+  patternC : PatternLabel
+  patternD : PatternLabel
+  timeSignature : TimeSignature
+deriving Repr, BEq
+
+instance : Inhabited Scene where
+  default :=
+    {
+      timeSignature := {numerator := 4, denominator := 4}
+    , patternA := {letter := 0, number := 0}
+    , patternB := {letter := 1, number := 0}
+    , patternC := {letter := 2, number := 0}
+    , patternD := {letter := 3, number := 0}
+    }
+
+
+structure Scenes where
+  raw : ByteArray
+  scenes : Array Scene
+deriving Repr, BEq
+
+
 structure Project where
   pads : ByteArray
   scenes : ByteArray
