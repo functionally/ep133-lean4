@@ -72,6 +72,8 @@ def parseScenes (raw : ByteArray) : ParseResult Scenes :=
 
 def parsePad (raw : ByteArray) : ParseResult Pad :=
   do
+    require (raw.size = 26)
+      $ throw ("Pad contains " ++ toString raw.size ++ " bytes instead of 27.")
     let playMode ← PlayMode.ofUInt8 raw[23]!
     let volume ← Volume.ofUInt8 raw[16]!
     let timeStretchMode ← TimeStretchMode.ofUInt8 raw[21]!
@@ -84,7 +86,7 @@ def parsePad (raw : ByteArray) : ParseResult Pad :=
         left := getUInt32 0 raw[6]! raw[5]! raw[4]! |> UInt32.toNat
         right := getUInt32 0 raw[10]! raw[9]! raw[8]! |> UInt32.toNat
       }
-    let pitch ← Pitch.ofUInt8s raw[17]! raw[26]!
+    let pitch ← Pitch.ofUInt8s raw[17]! 0  -- raw[26]!
     pure
       {
         raw
