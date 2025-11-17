@@ -43,6 +43,16 @@ inductive EffectLabel where
 | CMP
 deriving Repr, BEq, Hashable, ToJson
 
+instance : ToString EffectLabel where
+  toString
+  | EffectLabel.OFF => "OFF"
+  | EffectLabel.DLY => "DLY"
+  | EffectLabel.RVB => "RVB"
+  | EffectLabel.DST => "DST"
+  | EffectLabel.CXO => "CXO"
+  | EffectLabel.FLT => "FLT"
+  | EffectLabel.CMP => "CMP"
+
 namespace EffectLabel
 
   def ofUInt8 : UInt8 → ParseResult EffectLabel
@@ -69,6 +79,16 @@ structure Effects where
   active : EffectLabel
   effects : Std.HashMap EffectLabel EffectParams
 deriving Repr
+
+instance : ToJson Effects where
+  toJson x :=
+    open Lean.ToJson (toJson) in
+    ToJson.toJson
+      $ Json.mkObj
+      [
+        ⟨ "active" , toJson x.active ⟩
+      , ⟨ "effects", Json.mkObj $ x.effects.toList.map (fun ⟨ k , v ⟩ ↦ ⟨ toString k , toJson v ⟩) ⟩
+      ]
 
 
 structure TimeSignature where
