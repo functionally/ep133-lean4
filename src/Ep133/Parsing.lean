@@ -4,7 +4,7 @@ import Ep133.Util
 
 
 open Ep133.Types
-open Ep133.Util (getFloat32BE require)
+open Ep133.Util (getFloat32BE getUInt32 require)
 
 open ParseResult (throw)
 
@@ -67,6 +67,43 @@ def parseScenes (raw : ByteArray) : ParseResult Scenes :=
       {
         raw
       , scenes := scenes.toArray
+      }
+
+
+def parsePad (raw : ByteArray) : ParseResult Pad :=
+  do
+    let playMode ← PlayMode.ofUInt8 raw[23]!
+    let volume ← Volume.ofUInt8 raw[16]!
+    let timeStretchMode ← TimeStretchMode.ofUInt8 raw[21]!
+    let timeStretchBars ← TimeStretchBars.ofUInt8 raw[25]!
+    let chokeGroup ← ChokeGroup.ofUInt8 raw[22]!
+    let soundId ← SoundId.ofUInt8s raw[2]! raw[1]!
+    let pan ← Pan.ofUInt8 raw[18]!
+    let trim :=
+      {
+        left := getUInt32 0 raw[6]! raw[5]! raw[4]! |> UInt32.toNat
+        right := getUInt32 0 raw[10]! raw[9]! raw[8]! |> UInt32.toNat
+      }
+    let pitch ← Pitch.ofUInt8s raw[17]! raw[26]!
+    pure
+      {
+        raw
+      , soundId
+      , volume
+      , attack := raw[19]!
+      , release := raw[20]!
+      , playMode
+      , timeStretch :=
+          {
+            mode := timeStretchMode
+          , bars:= timeStretchBars
+          , bpm := getFloat32BE raw 12
+          }
+      , pitch
+      , trim
+      , pan
+      , chokeGroup
+      , midiChannel := raw[3]!
       }
 
 

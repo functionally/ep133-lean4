@@ -1,6 +1,11 @@
 
+import Ep133.Util
+import Lean.Data.Json.FromToJson
 import Std.Data.HashMap.Basic
+import Std.Data.TreeMap.Raw.Basic
 
+open Ep133.Util (require)
+open Lean (Json ToJson)
 
 namespace Ep133.Types
 
@@ -36,7 +41,7 @@ inductive EffectLabel where
 | CXO
 | FLT
 | CMP
-deriving Repr, BEq, Hashable
+deriving Repr, BEq, Hashable, ToJson
 
 namespace EffectLabel
 
@@ -54,9 +59,9 @@ end EffectLabel
 
 
 structure EffectParams where
-  param1 : Float32
-  param2 : Float32
-deriving Repr, BEq
+  param1 : Float
+  param2 : Float
+deriving Repr, BEq, ToJson
 
 
 structure Effects where
@@ -71,6 +76,12 @@ structure TimeSignature where
   denominator : Nat
 deriving Repr, BEq
 
+instance : ToString TimeSignature where
+  toString x := toString x.numerator ++ "/" ++ toString x.denominator
+
+instance : ToJson TimeSignature where
+  toJson := ToJson.toJson ∘ toString
+
 
 structure PatternLabel where
   letter : Fin 4
@@ -84,6 +95,9 @@ instance : ToString PatternLabel where
     let number := if n.toNat < 9 then "0" ++ toString (n.toNat + 1) else toString (n.toNat + 1)
     letter.toString ++ number
 
+instance : ToJson PatternLabel where
+  toJson := ToJson.toJson ∘ toString
+
 
 structure Scene where
   patternA : PatternLabel
@@ -91,7 +105,7 @@ structure Scene where
   patternC : PatternLabel
   patternD : PatternLabel
   timeSignature : TimeSignature
-deriving Repr, BEq
+deriving Repr, BEq, ToJson
 
 instance : Inhabited Scene where
   default :=
@@ -109,22 +123,25 @@ structure Scenes where
   scenes : Array Scene
 deriving Repr, BEq
 
+instance : ToJson Scenes where
+  toJson := ToJson.toJson ∘ Scenes.scenes
 
-inductive TimeStretch where
+
+inductive TimeStretchMode where
 | OFF
 | BPM
 | BARS
-deriving Repr, BEq
+deriving Repr, BEq, ToJson
 
-namespace TimeStretch
+namespace TimeStretchMode
 
-  def ofUInt8 : UInt8 → ParseResult TimeStretch
+  def ofUInt8 : UInt8 → ParseResult TimeStretchMode
   | 0 => pure OFF
   | 1 => pure BPM
   | 2 => pure BARS
   | i => throw $ "Time stretch " ++ toString i ++ " is not defined."
 
-end TimeStretch
+end TimeStretchMode
 
 
 inductive TimeStretchBars where
@@ -133,7 +150,7 @@ inductive TimeStretchBars where
 | QUADRUPLE
 | HALF
 | QUARTER
-deriving Repr, BEq
+deriving Repr, BEq, ToJson
 
 namespace TimeStretchBars
 
@@ -148,11 +165,18 @@ namespace TimeStretchBars
 end TimeStretchBars
 
 
+structure TimeStretch where
+  mode : TimeStretchMode
+  bars : TimeStretchBars
+  bpm : Float
+deriving Repr, BEq, ToJson
+
+
 inductive PlayMode where
 | ONE
 | KEY
 | LEG
-deriving Repr, BEq
+deriving Repr, BEq, ToJson
 
 namespace PlayMode
 
@@ -168,7 +192,7 @@ end PlayMode
 inductive ChokeGroup where
 | TRUE
 | FALSE
-deriving Repr, BEq
+deriving Repr, BEq, ToJson
 
 namespace ChokeGroup
 
@@ -183,23 +207,149 @@ end ChokeGroup
 def Volume := Fin 201
 deriving Repr, BEq
 
+instance : ToJson Volume where
+  toJson := ToJson.toJson ∘ Fin.toNat
+
+namespace Volume
+
+  def ofUInt8 (i : UInt8) : ParseResult Volume :=
+    do
+      require (i <= 200)
+        $ throw ("Volume " ++ toString i ++ " is too large.")
+      pure $ Fin.ofNat 201 i.toNat
+
+end Volume
+
+
+structure Pitch where
+  integral : Fin 25
+  decimal : UInt8
+deriving Repr, BEq
+
+instance : ToString Pitch where
+  toString x := toString x.integral ++ "." ++ toString x.decimal
+
+instance : ToJson Pitch where
+  toJson := ToJson.toJson ∘ toString
+
+namespace Pitch
+
+  def ofUInt8s (i d : UInt8) : ParseResult Pitch :=
+    do
+      require (i <= 12 || i >= 244)
+        $ throw ("Pitch " ++ toString i ++ " is out of range.")
+      pure
+        {
+          integral := Fin.ofNat 25 $ if i <= 12 then i.toNat + 13 else 256 - i.toNat
+        , decimal := d
+        }
+
+end Pitch
+
+
+def SoundId := Fin 999
+deriving Repr, BEq
+
+instance : ToString SoundId where
+  toString i :=
+    let j := i.toNat + 1
+    if j < 10
+      then "00" ++ toString j
+      else if j < 99
+        then "0" ++ toString j
+        else toString j
+
+instance : ToJson SoundId where
+  toJson := ToJson.toJson ∘ toString
+
+namespace SoundId
+
+  def ofUInt8s (i j : UInt8) : ParseResult SoundId :=
+    do
+      let n := (i.toNat <<< 8) + j.toNat
+      require (n > 0 && n < 1000)
+        $ throw ("Sound ID " ++ toString n ++ " out of range.")
+      pure $ Fin.ofNat 999 (n - 1)
+
+end SoundId
+
+
+def Pan := Fin 33
+deriving Repr, BEq
+
+instance : ToString Pan where
+  toString i := (i.toNat.toFloat / 16 - 1) |> toString
+
+instance : ToJson Pan where
+  toJson i := ToJson.toJson (i.toNat.toFloat / 16 - 1)
+
+namespace Pan
+
+  def ofUInt8 (i : UInt8) : ParseResult Pan :=
+    do
+      require (i <= 16 || i >= 240)
+        $ throw ("Pan " ++ toString i ++ " is out of range.")
+      if i <= 16
+        then pure ∘ Fin.ofNat 33 $ i.toNat + 17
+        else pure ∘ Fin.ofNat 33 $ 255 - i.toNat
+
+end Pan
+
+
+
+structure Trim where
+  left : Nat
+  right : Nat
+deriving Repr, BEq, ToJson
+
 
 def Attack := UInt8
 deriving Repr, BEq
+
+instance : ToJson Attack where
+  toJson := ToJson.toJson ∘ UInt8.toNat
 
 
 def Release := UInt8
 deriving Repr, BEq
 
+instance : ToJson Release where
+  toJson := ToJson.toJson ∘ UInt8.toNat
 
-structure Project where
-  pads : ByteArray
-  scenes : ByteArray
-  settings : ByteArray
-  effects : ByteArray
-  scenesSettings  : ByteArray
-  sounds : ByteArray
-deriving Repr
+
+structure Pad where
+  raw : ByteArray
+  soundId : SoundId
+  volume : Volume
+  attack : Attack
+  release : Release
+  playMode : PlayMode
+  timeStretch : TimeStretch
+  pitch : Pitch
+  trim : Trim
+  pan : Pan
+  chokeGroup : ChokeGroup
+  midiChannel : UInt8
+deriving Repr, BEq
+
+instance : ToJson Pad where
+  toJson x :=
+    open Lean.ToJson (toJson) in
+    ToJson.toJson
+      $ Json.mkObj
+      [
+        ⟨ "soundId" , toJson x.soundId              ⟩
+      , ⟨ "volume"  , toJson x.volume               ⟩
+      , ⟨ "attack"  , toJson x.attack               ⟩
+      , ⟨ "release" , toJson x.release              ⟩
+      , ⟨ "playMode", toJson x.playMode             ⟩
+      , ⟨ "timeStretch", toJson x.timeStretch       ⟩
+      , ⟨ "pitch"      , toJson x.pitch             ⟩
+      , ⟨ "trim"       , toJson x.trim              ⟩
+      , ⟨ "pan"        , toJson x.pan               ⟩
+      , ⟨ "chokeGroup" , toJson x.chokeGroup        ⟩
+      , ⟨ "midiChannel", toJson x.midiChannel.toNat ⟩
+      ]
 
 
 end Ep133.Types
